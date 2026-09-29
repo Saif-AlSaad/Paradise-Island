@@ -439,9 +439,10 @@ export class EnemyModelFactory {
       rig.shinL.rotation.x = legSwing < 0 ? -kneeFlex : 0.05;
       rig.shinR.rotation.x = -legSwing < 0 ? -kneeFlexR : 0.05;
 
-      // Hip sway & slight vertical step bounce
-      rig.root.position.y = Math.abs(Math.sin(animTime * freq)) * 0.04;
+      // Hip sway & slight vertical step bounce (bounce upper body relative to pelvis, NEVER root world y)
+      rig.upperBody.position.y = 0.96 + Math.abs(Math.sin(animTime * freq)) * 0.04;
       rig.upperBody.rotation.z = Math.sin(animTime * freq) * 0.035;
+      rig.head.rotation.y = 0;
 
       // Arm counter swing (more pronounced if idle/patrolling)
       if (state !== "combat") {
@@ -455,7 +456,7 @@ export class EnemyModelFactory {
       rig.shinL.rotation.x = 0;
       rig.shinR.rotation.x = 0;
       rig.upperBody.position.y = 0.96 + Math.sin(animTime * 1.8) * 0.015;
-      rig.head.rotation.y = Math.sin(animTime * 0.6) * 0.2;
+      rig.head.rotation.y = state === "combat" ? 0 : Math.sin(animTime * 0.6) * 0.2;
     }
 
     // 3D Upper Body Aim Tracking

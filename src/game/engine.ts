@@ -146,7 +146,11 @@ class Enemy {
 
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) {
-        o.castShadow = true;
+        if (o.material && (o.material as THREE.Material).visible === false) {
+          o.castShadow = false;
+        } else {
+          o.castShadow = true;
+        }
         o.userData.enemy = this;
         if (!o.userData.part) o.userData.part = "body";
         if (o.material instanceof THREE.MeshStandardMaterial) {
@@ -1426,6 +1430,8 @@ export class FPEngine {
     e.state = "dead";
     e.deadTimer = 3.2;
     e.deathProgress = 0;
+    e.hitFlash = 0;
+    e.mats.forEach((m) => m.emissive.setRGB(0, 0, 0));
     this.kills++;
     this.killStreak++;
     this.streakTimer = 4;
@@ -1545,6 +1551,7 @@ export class FPEngine {
         }
         continue;
       }
+      e.group.position.y = getTerrainHeight(e.group.position.x, e.group.position.z);
       const toPlayer = this.pos.clone().sub(e.group.position);
       toPlayer.y = 0;
       const dist = toPlayer.length();
@@ -1643,6 +1650,7 @@ export class FPEngine {
 
         if (e.state === "idle") {
           // wander around home if not distracted
+          let isMovingWander = false;
           if (!e.investigateTarget) {
             e.wanderTimer -= dt;
             if (e.wanderTimer <= 0) {
@@ -1657,10 +1665,11 @@ export class FPEngine {
                 this.moveEnemy(e, to, st.speed * 0.3, dt);
                 e.group.rotation.y = Math.atan2(to.x, to.z);
                 e.walkPhase += dt * 5;
+                isMovingWander = true;
               }
             }
           }
-          this.animateEnemy(e, false, dt, t);
+          this.animateEnemy(e, isMovingWander, dt, t);
           continue;
         }
       }
@@ -1688,7 +1697,8 @@ export class FPEngine {
           moveDir = perp.multiplyScalar(e.strafeDir * 0.7);
         }
       }
-      if (moveDir.lengthSq() > 0.01) {
+      const isMoving = moveDir.lengthSq() > 0.01;
+      if (isMoving) {
         this.moveEnemy(e, moveDir.normalize(), st.speed, dt);
         e.walkPhase += dt * (e.kind === "rusher" ? 13 : 8);
       }
@@ -1752,7 +1762,7 @@ export class FPEngine {
       // muzzle flash decay
       const flash = e.muzzle.children[0] as THREE.Sprite | undefined;
       if (flash) (flash.material as THREE.SpriteMaterial).opacity = Math.max(0, (flash.material as THREE.SpriteMaterial).opacity - dt * 12);
-      this.animateEnemy(e, true, dt, t);
+      this.animateEnemy(e, isMoving, dt, t);
     }
     this.closestSpotter = bestSpotter;
   }
