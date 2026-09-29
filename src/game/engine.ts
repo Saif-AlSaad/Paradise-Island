@@ -1819,8 +1819,14 @@ export class FPEngine {
     this.raycaster.set(from, toEye);
     this.raycaster.far = d;
     const blocked = this.raycaster.intersectObjects(this.world!.solidMeshes, true);
+    if (blocked.length > 0) {
+      const hitPoint = blocked[0].point;
+      this.spawnTracer(from, hitPoint, 0xff6a3d);
+      this.impactEffect(hitPoint, blocked[0].face?.normal ?? new THREE.Vector3(0, 1, 0));
+      return;
+    }
     const sprinting = Math.hypot(this.vel.x, this.vel.z) > 8.5;
-    const hitChance = blocked.length > 0 ? 0 : Math.max(0.12, Math.min(0.72, 0.68 - dist * 0.011 - (sprinting ? 0.14 : 0) - (this.ads > 0.5 && this.grounded ? 0.02 : 0)));
+    const hitChance = Math.max(0.12, Math.min(0.72, 0.68 - dist * 0.011 - (sprinting ? 0.14 : 0) - (this.ads > 0.5 && this.grounded ? 0.02 : 0)));
     if (Math.random() < hitChance && this.hp > 0) {
       const fall = Math.max(0.4, 1 - dist / 90);
       this.damagePlayer(st.damage * fall, e.group.position);
@@ -1844,12 +1850,24 @@ export class FPEngine {
         if (flash) { (flash.material as THREE.SpriteMaterial).opacity = 1; flash.scale.setScalar(1.2); }
         const from = new THREE.Vector3();
         e.gunTip.getWorldPosition(from);
-        const hitChance = Math.max(0.1, 0.5 - dist * 0.008);
-        if (Math.random() < hitChance) {
-          this.damagePlayer(ENEMY_STATS.boss.damage * Math.max(0.4, 1 - dist / 80), e.group.position);
-          this.spawnTracer(from, playerEye.clone(), 0xff3d3d);
+        const toEye = playerEye.clone().sub(from);
+        const d = toEye.length();
+        toEye.normalize();
+        this.raycaster.set(from, toEye);
+        this.raycaster.far = d;
+        const blocked = this.raycaster.intersectObjects(this.world!.solidMeshes, true);
+        if (blocked.length > 0) {
+          const hitPoint = blocked[0].point;
+          this.spawnTracer(from, hitPoint, 0xff3d3d);
+          this.impactEffect(hitPoint, blocked[0].face?.normal ?? new THREE.Vector3(0, 1, 0));
         } else {
-          this.spawnTracer(from, playerEye.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 4)), 0xff3d3d);
+          const hitChance = Math.max(0.1, 0.5 - dist * 0.008);
+          if (Math.random() < hitChance && this.hp > 0) {
+            this.damagePlayer(ENEMY_STATS.boss.damage * Math.max(0.4, 1 - dist / 80), e.group.position);
+            this.spawnTracer(from, playerEye.clone(), 0xff3d3d);
+          } else {
+            this.spawnTracer(from, playerEye.clone().add(new THREE.Vector3((Math.random() - 0.5) * 4, (Math.random() - 0.5) * 2.5, (Math.random() - 0.5) * 4)), 0xff3d3d);
+          }
         }
       }
     } else if (e.burstTimer <= 0 && dist < 55) {

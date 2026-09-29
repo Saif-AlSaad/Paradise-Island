@@ -424,7 +424,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     palm.position.set(x, h - 0.2, z);
     scene.add(palm);
     colliders.push({ x, z, r: 0.7 });
-    if (placed % 3 === 0) solidMeshes.push(palm.children[0]);
+    solidMeshes.push(palm.children[0]);
     placed++;
   }
 
@@ -451,6 +451,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
       g.position.set(x, h - 0.2, z);
       scene.add(g);
       colliders.push({ x, z, r: 0.9 });
+      solidMeshes.push(trunk);
     }
   }
 
@@ -468,10 +469,10 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
       rock.rotation.set(rng() * 3, rng() * 3, rng() * 3);
       rock.castShadow = rock.receiveShadow = true;
       scene.add(rock);
-      if (s > 1) {
+      if (s > 0.8) {
         colliders.push({ x, z, r: s * 0.9 });
-        solidMeshes.push(rock);
       }
+      solidMeshes.push(rock);
     }
   }
 
@@ -532,6 +533,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
       bag.rotation.y = ry;
       bag.castShadow = true;
       scene.add(bag);
+      solidMeshes.push(bag);
     }
     colliders.push({ x, z, r: 1.6 });
   }
@@ -550,10 +552,10 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     g.add(roof);
     // stilts + door
     const door = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.2, 2),
+      new THREE.BoxGeometry(1.2, 2, 0.1),
       new THREE.MeshStandardMaterial({ color: 0x1a1208, roughness: 1 })
     );
-    door.position.set(0, 1.4, d / 2 + 0.01);
+    door.position.set(0, 1.4, d / 2 + 0.05);
     g.add(door);
     for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
       const stilt = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 1, 6), woodDark);
@@ -564,7 +566,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     g.rotation.y = ry;
     scene.add(g);
     colliders.push({ x, z, r: Math.max(w, d) * 0.62 });
-    solidMeshes.push(walls);
+    solidMeshes.push(walls, roof, door);
     return g;
   }
   function addTower(x: number, z: number) {
@@ -575,27 +577,30 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
       leg.position.set(sx, 4, sz);
       leg.castShadow = true;
       g.add(leg);
+      solidMeshes.push(leg);
     }
     const plat = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.3, 4.2), woodMat);
     plat.position.y = 8;
     plat.castShadow = true;
     g.add(plat);
+    solidMeshes.push(plat);
     for (let i = 0; i < 4; i++) {
       const rail = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.15, 0.15), woodDark);
       const a = (i / 4) * Math.PI * 2;
       rail.position.set(Math.sin(a) * 2, 9, Math.cos(a) * 2);
       rail.rotation.y = a;
       g.add(rail);
+      solidMeshes.push(rail);
     }
     const roof = new THREE.Mesh(new THREE.ConeGeometry(3.4, 1.8, 4), thatchMat);
     roof.position.y = 10.4;
     roof.rotation.y = Math.PI / 4;
     roof.castShadow = true;
     g.add(roof);
+    solidMeshes.push(roof);
     g.position.set(x, h, z);
     scene.add(g);
     colliders.push({ x, z, r: 2.4 });
-    solidMeshes.push(plat);
   }
   const fireLights: THREE.PointLight[] = [];
   function addCampfire(x: number, z: number) {
@@ -645,6 +650,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     pole.position.set(x, h + 3.5, z);
     pole.castShadow = true;
     scene.add(pole);
+    solidMeshes.push(pole);
     const mat = new THREE.MeshStandardMaterial({ color: 0xc22a1c, side: THREE.DoubleSide, roughness: 1 });
     const flag = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 1.4, 6, 1), mat);
     flag.position.set(x + 1.25, h + 5.9, z);
@@ -711,7 +717,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     g.position.set(x, h, z);
     scene.add(g);
     colliders.push({ x, z, r: 0.6 });
-    solidMeshes.push(boxMesh);
+    solidMeshes.push(boxMesh, pole);
 
     const ref: AlarmBoxRef = {
       outpostIndex: outpostIdx,
@@ -790,12 +796,14 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
       plank.position.set(0, 1.15, i * 1.8);
       plank.castShadow = plank.receiveShadow = true;
       g.add(plank);
+      solidMeshes.push(plank);
     }
     for (let i = 0; i < 5; i++) {
       for (const sx of [-1.5, 1.5]) {
         const post = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 2.6, 6), woodDark);
         post.position.set(sx, 0.4, i * 3.6);
         g.add(post);
+        solidMeshes.push(post);
       }
     }
     // boat
@@ -805,6 +813,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     const rim = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.3, 5.3), woodDark);
     rim.position.set(5, 1.05, 16);
     g.add(hull, rim);
+    solidMeshes.push(hull, rim);
     g.position.set(-18, 0, 128);
     scene.add(g);
   }
@@ -818,6 +827,7 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     mast.position.set(x, h + 13, z);
     mast.castShadow = true;
     scene.add(mast);
+    solidMeshes.push(mast);
     mastLight = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff2222 }));
     mastLight.position.set(x, h + 26.4, z);
     scene.add(mastLight);
@@ -886,5 +896,6 @@ export function buildWorld(scene: THREE.Scene, quality: "low" | "high"): WorldRe
     a.sounding = true;
   };
 
+  scene.updateMatrixWorld(true);
   return { colliders, solidMeshes, barrels, outposts, flagMats, alarms, bushes, update, setOutpostCaptured, disableAlarm, soundAlarm };
 }
